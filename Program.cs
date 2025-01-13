@@ -23,6 +23,7 @@ namespace Snake
         private static Window window;
         private static string direction = null;
         private static List<Particle> Particles = new List<Particle>();
+        private static List<Particle> Tail = new List<Particle>();
         private static CompositionTarget handler;
         private static int Score = 0;
         private static TextBox score = new TextBox
