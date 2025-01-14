@@ -74,6 +74,8 @@ namespace Snake
                             SpawnRandomParticles(canvas, n);
                         }
                         CheckCollision(canvas);
+                        AddTail(Tail);
+                        
                     }
                 }
             };
@@ -196,9 +198,10 @@ namespace Snake
             }
         }
 
-        public static void CheckCollision(Canvas canvas)
+        public static bool CheckCollision(Canvas canvas)
         {
             double distance;
+            var flag = false;
             for (int i = 1; i < Particles.Count; i++)
             {
                 distance = Math.Sqrt(Math.Pow(Particles[0].PositionX - Particles[i].PositionX, 2) + Math.Pow(Particles[0].PositionY - Particles[i].PositionY, 2));
@@ -208,8 +211,78 @@ namespace Snake
                     canvas.Children.Remove(Particles[i].shape);
                     Particles[i].Dispose();
                     Particles.RemoveAt(i);
+                    Particle tail = new Particle(window.Width, window.Height, Brushes.White);
+                    if (direction == "Left")
+                    {
+                        tail.PositionX = Particles[0].PositionX + 16;
+                        tail.PositionY = Particles[0].PositionY;
+                        flag = true;
+                    }
+                    if (direction == "Right")
+                    {
+                        tail.PositionX = Particles[0].PositionX - 16;
+                        tail.PositionY = Particles[0].PositionY;
+                        flag = true;
+                    }
+                    if (direction == "Up")
+                    {
+                        tail.PositionX = Particles[0].PositionX;
+                        tail.PositionY = Particles[0].PositionY + 16;
+                        flag = true;
+                    }
+                    if (direction == "Down")
+                    {
+                        tail.PositionX = Particles[0].PositionX;
+                        tail.PositionY = Particles[0].PositionY - 16;
+                        flag = true;
+                    }
+                    Canvas.SetTop(tail.shape,tail.PositionY);
+                    Canvas.SetLeft(tail.shape,tail.PositionX);
+                    canvas.Children.Add(tail.shape);
+                    Tail.Add(tail);
                 }
             }
+            return flag;
+        }
+
+        public static void AddTail(List<Particle> tail)
+        {
+            if (tail.Count != 0)
+            {
+                CheckDirection(tail[0], Particles[0]);
+                if (tail.Count >= 2) {
+                    for (int i = 1; i < tail.Count; i++)
+                    {
+                        CheckDirection(tail[i], tail[i-1]);
+                    }
+                }
+            }
+        }
+
+        public static void CheckDirection(Particle par1, Particle par2)
+        {
+            if (direction == "Left")
+            {
+                par1.PositionX = par2.PositionX + 10;
+                par1.PositionY = par2.PositionY;
+            }
+            if (direction == "Right")
+            {
+                par1.PositionX = par2.PositionX - 10;
+                par1.PositionY = par2.PositionY;
+            }
+            if (direction == "Up")
+            {
+                par1.PositionX = par2.PositionX;
+                par1.PositionY = par2.PositionY + 10;
+            }
+            if (direction == "Down")
+            {
+                par1.PositionX = par2.PositionX;
+                par1.PositionY = par2.PositionY - 10;
+            }
+            Canvas.SetLeft(par1.shape, par1.PositionX);
+            Canvas.SetTop(par1.shape, par1.PositionY);
         }
 
 
