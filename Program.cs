@@ -32,6 +32,7 @@ namespace Snake
         private static List<Particle> Tail = new List<Particle>();
         private static CompositionTarget handler;
         private static int Score = 0;
+        private static GameOver gOver;
         private static TextBox score = new TextBox
         {
             Text = $"Score = {Score}",
@@ -50,7 +51,7 @@ namespace Snake
             {
                 Width = Width,
                 Height = Height,
-                Title = "Snake"
+                Title = "Snake Game"
             };
             window.Focus();
             s_log.Verbose("Window Created...");
@@ -65,8 +66,7 @@ namespace Snake
             s_log.Verbose("Canvas Initialized...");
 
             s_log.Verbose("Creating snake head...");
-            CreateSnakeHead(canvas,window);
-            Thread.Sleep(500);
+            SnakeObj.CreateSnakeHead(canvas, window,Particles,score);
 
             window.KeyDown += Movement;
 
@@ -76,10 +76,8 @@ namespace Snake
                 {
                     if (Update(canvas, direction))
                     {
-                        GameOver(canvas);
+                        gOver = new GameOver(canvas);
                         s_log.Information("Game Over...");
-
-
                     }
                     else
                     {
@@ -89,8 +87,7 @@ namespace Snake
                             SpawnRandomParticles(canvas, n);
                         }
                         CheckCollision(canvas);
-                        AddTail(Tail);
-                        
+                        SnakeObj.AddTail(Particles, Tail);
                     }
                 }
             };
@@ -99,15 +96,6 @@ namespace Snake
             app.Run(window);
         }
 
-        public static void CreateSnakeHead(Canvas canvas, Window window)
-        {
-            Particle particle = new Particle(window.Width,window.Height, Brushes.Green);
-            Particles.Add(particle);
-            Canvas.SetLeft(particle.shape,window.Width / 2.0);
-            Canvas.SetTop(particle.shape, window.Height / 2.0);
-            canvas.Children.Add(particle.shape);
-            canvas.Children.Add(score);
-        }
 
         public static bool Update(Canvas canvas, string dir)
         {
@@ -245,55 +233,6 @@ namespace Snake
                 }
             }
             return flag;
-        }
-
-        public static void AddTail(List<Particle> tail)
-        {
-            var prevX = Particles[0].PositionX;
-            var prevY = Particles[0].PositionY;
-            var distance = 8;
-
-            foreach (Particle p in tail)
-            {
-                var tempX = p.PositionX;
-                var tempY = p.PositionY;
-
-                var deltaX = p.PositionX - prevX;
-                var deltaY = p.PositionY - prevY;
-
-                var magnitude = Math.Sqrt(deltaX * deltaX + deltaY * deltaY);
-
-                var unitX = (magnitude > 0) ? deltaX / magnitude : 0;
-                var unitY = (magnitude > 0) ? deltaY / magnitude : 0;
-
-                p.PositionX = prevX + unitX * distance;
-                p.PositionY = prevY + unitY * distance;
-
-                prevX = tempX;
-                prevY = tempY;
-
-
-                Canvas.SetLeft(p.shape, p.PositionX);
-                Canvas.SetTop(p.shape, p.PositionY);
-            }
-        }
-
-
-        public static void GameOver(Canvas canvas)
-        {
-            TextBlock text = new TextBlock
-            {
-                Text = "GAME OVER",
-                Background = Brushes.Black,
-                FontSize = 32,
-                Width = 400,
-                Height = 50,
-                Foreground = Brushes.Green,
-                TextAlignment = TextAlignment.Center
-            };
-            Canvas.SetLeft(text, (canvas.Width / 2.0) - 200);
-            Canvas.SetTop(text, (canvas.Height / 2.0) - 25);
-            canvas.Children.Add(text);
         }
     }
 }
