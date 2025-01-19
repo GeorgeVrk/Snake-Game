@@ -20,8 +20,8 @@ namespace Snake
         {
             shape = new Ellipse
             {
-                Width = 10,
-                Height = 10,
+                Width = 20,
+                Height = 20,
                 Fill = Color
             };
 

@@ -13,11 +13,17 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using Serilog;
 
 namespace Snake
 {
     internal class Program
     {
+        #region Logger
+        private static Serilog.ILogger s_log = new LoggerConfiguration().WriteTo.Console().MinimumLevel.Verbose().CreateLogger().ForContext(typeof(Program));
+        #endregion
+
+        #region Properties
         private static double Width = 1300;
         private static double Height = 740;
         private static Window window;
@@ -30,6 +36,8 @@ namespace Snake
         {
             Text = $"Score = {Score}",
         };
+        #endregion
+        
 
         [STAThread]
         static void Main(string[] args)
@@ -37,6 +45,7 @@ namespace Snake
             Program program = new Program();
             Application app = new Application();
 
+            s_log.Verbose("Creating window...");
             window = new Window
             {
                 Width = Width,
@@ -44,14 +53,18 @@ namespace Snake
                 Title = "Snake"
             };
             window.Focus();
+            s_log.Verbose("Window Created...");
 
+            s_log.Verbose("Initializing canvas...");
             Canvas canvas = new Canvas
             {
                 Width = 1280,
                 Height = 720,
                 Background = Brushes.Black
             };
+            s_log.Verbose("Canvas Initialized...");
 
+            s_log.Verbose("Creating snake head...");
             CreateSnakeHead(canvas,window);
             Thread.Sleep(500);
 
@@ -64,7 +77,9 @@ namespace Snake
                     if (Update(canvas, direction))
                     {
                         GameOver(canvas);
-                        
+                        s_log.Information("Game Over...");
+
+
                     }
                     else
                     {
@@ -166,16 +181,28 @@ namespace Snake
             switch (e.Key)
             {
                 case Key.W:
-                    direction = "Up";
+                    if (direction != "Down")
+                    {
+                        direction = "Up";
+                    }
                     break;
                 case Key.S:
-                    direction = "Down";
+                    if (direction != "Up")
+                    {
+                        direction = "Down";
+                    }
                     break;
                 case Key.D:
-                    direction = "Right";
+                    if (direction != "Left")
+                    {
+                        direction = "Right";
+                    }
                     break;
                 case Key.A:
-                    direction = "Left";
+                    if (direction != "Right")
+                    {
+                        direction = "Left";
+                    }
                     break;
                 default:
                     direction = null;
@@ -212,34 +239,9 @@ namespace Snake
                     Particles[i].Dispose();
                     Particles.RemoveAt(i);
                     Particle tail = new Particle(window.Width, window.Height, Brushes.White);
-                    if (direction == "Left")
-                    {
-                        tail.PositionX = Particles[0].PositionX + 16;
-                        tail.PositionY = Particles[0].PositionY;
-                        flag = true;
-                    }
-                    if (direction == "Right")
-                    {
-                        tail.PositionX = Particles[0].PositionX - 16;
-                        tail.PositionY = Particles[0].PositionY;
-                        flag = true;
-                    }
-                    if (direction == "Up")
-                    {
-                        tail.PositionX = Particles[0].PositionX;
-                        tail.PositionY = Particles[0].PositionY + 16;
-                        flag = true;
-                    }
-                    if (direction == "Down")
-                    {
-                        tail.PositionX = Particles[0].PositionX;
-                        tail.PositionY = Particles[0].PositionY - 16;
-                        flag = true;
-                    }
-                    Canvas.SetTop(tail.shape,tail.PositionY);
-                    Canvas.SetLeft(tail.shape,tail.PositionX);
-                    canvas.Children.Add(tail.shape);
                     Tail.Add(tail);
+                    canvas.Children.Add(tail.shape);
+                    flag = true;
                 }
             }
             return flag;
@@ -247,42 +249,24 @@ namespace Snake
 
         public static void AddTail(List<Particle> tail)
         {
-            if (tail.Count != 0)
-            {
-                CheckDirection(tail[0], Particles[0]);
-                if (tail.Count >= 2) {
-                    for (int i = 1; i < tail.Count; i++)
-                    {
-                        CheckDirection(tail[i], tail[i-1]);
-                    }
-                }
-            }
-        }
+            var prevX = Particles[0].PositionX;
+            var prevY = Particles[0].PositionY;
 
-        public static void CheckDirection(Particle par1, Particle par2)
-        {
-            if (direction == "Left")
+            foreach (Particle p in tail)
             {
-                par1.PositionX = par2.PositionX + 10;
-                par1.PositionY = par2.PositionY;
+                var tempX = p.PositionX;
+                var tempY = p.PositionY;
+
+                p.PositionX = prevX;
+                p.PositionY = prevY;
+
+                prevX = tempX;
+                prevY = tempY;
+
+
+                Canvas.SetLeft(p.shape, p.PositionX);
+                Canvas.SetTop(p.shape, p.PositionY);
             }
-            if (direction == "Right")
-            {
-                par1.PositionX = par2.PositionX - 10;
-                par1.PositionY = par2.PositionY;
-            }
-            if (direction == "Up")
-            {
-                par1.PositionX = par2.PositionX;
-                par1.PositionY = par2.PositionY + 10;
-            }
-            if (direction == "Down")
-            {
-                par1.PositionX = par2.PositionX;
-                par1.PositionY = par2.PositionY - 10;
-            }
-            Canvas.SetLeft(par1.shape, par1.PositionX);
-            Canvas.SetTop(par1.shape, par1.PositionY);
         }
 
 
