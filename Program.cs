@@ -251,14 +251,23 @@ namespace Snake
         {
             var prevX = Particles[0].PositionX;
             var prevY = Particles[0].PositionY;
+            var distance = 8;
 
             foreach (Particle p in tail)
             {
                 var tempX = p.PositionX;
                 var tempY = p.PositionY;
 
-                p.PositionX = prevX;
-                p.PositionY = prevY;
+                var deltaX = p.PositionX - prevX;
+                var deltaY = p.PositionY - prevY;
+
+                var magnitude = Math.Sqrt(deltaX * deltaX + deltaY * deltaY);
+
+                var unitX = (magnitude > 0) ? deltaX / magnitude : 0;
+                var unitY = (magnitude > 0) ? deltaY / magnitude : 0;
+
+                p.PositionX = prevX + unitX * distance;
+                p.PositionY = prevY + unitY * distance;
 
                 prevX = tempX;
                 prevY = tempY;
