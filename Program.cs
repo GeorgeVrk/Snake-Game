@@ -26,68 +26,51 @@ namespace Snake
         #region Properties
         private static double Width = 1300;
         private static double Height = 740;
-        private static Window window;
-        private static string direction = null;
+        private static Directions? direction = null;
         private static List<Particle> Particles = new List<Particle>();
         private static List<Particle> Tail = new List<Particle>();
         private static CompositionTarget handler;
-        private static int Score = 0;
-        private static GameOver gOver;
-        private static TextBox score = new TextBox
-        {
-            Text = $"Score = {Score}",
-        };
         #endregion
         
 
         [STAThread]
         static void Main(string[] args)
         {
-            Program program = new Program();
-            Application app = new Application();
+            var program = new Program();
+            var app = new Application();
+            var window = program.CreateWindow();
+            var canvas = program.CreateCanvas();
+            var scoreBox = program.CreateScoreBox(canvas);
+            var foodHandler = new FoodHandler(window, canvas, Particles);
+            var gameHandler = new GameHandler(window, canvas, direction);
+            var gameOver = new GameOver(canvas);
 
-            s_log.Verbose("Creating window...");
-            window = new Window
-            {
-                Width = Width,
-                Height = Height,
-                Title = "Snake Game"
-            };
-            window.Focus();
-            s_log.Verbose("Window Created...");
+            var compHandler = new ComponentHandler(window);
+            compHandler.OnDirectionChanged += HandleMovementChange;
+            compHandler.MonitorMovement();
 
-            s_log.Verbose("Initializing canvas...");
-            Canvas canvas = new Canvas
-            {
-                Width = 1280,
-                Height = 720,
-                Background = Brushes.Black
-            };
-            s_log.Verbose("Canvas Initialized...");
+            SnakeObj snake = new SnakeObj();
+            snake.CreateSnakeHead(canvas, window, Tail);
 
-            s_log.Verbose("Creating snake head...");
-            SnakeObj.CreateSnakeHead(canvas, window,Particles,score);
 
-            window.KeyDown += Movement;
 
             CompositionTarget.Rendering += (s, d) =>
             {
                 if (direction != null)
                 {
-                    if (Update(canvas, direction))
+                    if (gameHandler.Update(canvas,direction,Tail))
                     {
-                        gOver = new GameOver(canvas);
-                        s_log.Information("Game Over...");
+                        gameOver.GameOverScreen();
                     }
                     else
                     {
                         int n = 1;
-                        if (Particles.Count - 1 < n)
+                        if (foodHandler.GetFoodList().Count < n)
                         {
-                            SpawnRandomParticles(canvas, n);
+                            foodHandler.SpawnRandomParticles(n);
                         }
-                        CheckCollision(canvas);
-                        SnakeObj.AddTail(Particles, Tail);
+                        gameHandler.CheckCollision(scoreBox,Particles,Tail);
+                        snake.AddTail(Tail);
                     }
                 }
             };
@@ -97,142 +80,55 @@ namespace Snake
         }
 
 
-        public static bool Update(Canvas canvas, string dir)
+        private static void HandleMovementChange(Directions? newDirections)
         {
-            Particle particle = Particles[0];
-            var flag = false;
-            if (!CheckBounds(canvas, particle))
-            {
-                switch (dir)
-                {
-                    case "Up":
-                        particle.PositionY = particle.PositionY - 1;
-                        break;
-                    case "Down":
-                        particle.PositionY = particle.PositionY + 1;
-                        break;
-                    case "Left":
-                        particle.PositionX = particle.PositionX - 1;
-                        break;
-                    case "Right":
-                        particle.PositionX = particle.PositionX + 1;
-                        break;
-                };
-            }
-            else
-            {
-                direction = null;
-                flag = true;
-            }
-
-            Canvas.SetLeft(particle.shape, particle.PositionX);
-            Canvas.SetTop(particle.shape, particle.PositionY);
-            return flag;
+            direction = newDirections;
         }
 
-        public static bool CheckBounds(Canvas canvas, Particle particle)
+        public Window CreateWindow()
         {
-            var flag = false;
-            if (particle.PositionY > canvas.Height - particle.shape.Width)
+            s_log.Verbose("Creating window...");
+
+            Window window = new Window
             {
-                direction = null;
-                particle.PositionY = canvas.Height + 1;
-                Canvas.SetTop(particle.shape, particle.PositionY);
-                flag = true;
-            }
-            if (particle.PositionY - particle.shape.Width <  0)
-            {
-                direction = null;
-                particle.PositionY = -1;
-                Canvas.SetTop(particle.shape, particle.PositionY);
-                flag = true;
-            }
-            if (particle.PositionX > canvas.Width)
-            {
-                direction = null;
-                particle.PositionX = canvas.Width + 1;
-                Canvas.SetLeft(particle.shape, particle.PositionX);
-                flag = true;
-            }
-            if (particle.PositionX - particle.shape.Width < 0)
-            {
-                direction = null;
-                particle.PositionX = -1;
-                Canvas.SetLeft(particle.shape, particle.PositionX);
-                flag = true;
-            }
-            return flag;
+                Width = Width,
+                Height = Height,
+                Title = "Snake Game"
+            };
+
+            window.Focus();
+
+            s_log.Verbose("Window Created...");
+
+            return window;
         }
 
-        public static void Movement(object sender, KeyEventArgs e)
+        public Canvas CreateCanvas()
         {
-            switch (e.Key)
+            s_log.Verbose("Creating canvas...");
+
+            Canvas canvas = new Canvas
             {
-                case Key.W:
-                    if (direction != "Down")
-                    {
-                        direction = "Up";
-                    }
-                    break;
-                case Key.S:
-                    if (direction != "Up")
-                    {
-                        direction = "Down";
-                    }
-                    break;
-                case Key.D:
-                    if (direction != "Left")
-                    {
-                        direction = "Right";
-                    }
-                    break;
-                case Key.A:
-                    if (direction != "Right")
-                    {
-                        direction = "Left";
-                    }
-                    break;
-                default:
-                    direction = null;
-                    break;
-            }
+                Width = 1280,
+                Height = 720,
+                Background = Brushes.Black
+            };
+            s_log.Verbose("Window canvas...");
+
+            return canvas;
         }
 
-        public static void SpawnRandomParticles(Canvas canvas, int n)
+        public TextBox CreateScoreBox(Canvas canvas)
         {
-            Random random = new Random();
-            for (int i = 0; i < n; i++)
-            {
-                Particle particle = new Particle(window.Width, window.Height, Brushes.Yellow);
-                particle.PositionX += random.Next(-300, 301);
-                particle.PositionY += random.Next(-300, 301);
-                Particles.Add(particle);
-                Canvas.SetLeft(particle.shape, particle.PositionX);
-                Canvas.SetTop(particle.shape, particle.PositionY);
-                canvas.Children.Add(particle.shape);
-            }
-        }
+            s_log.Verbose("Creating score box...");
 
-        public static bool CheckCollision(Canvas canvas)
-        {
-            double distance;
-            var flag = false;
-            for (int i = 1; i < Particles.Count; i++)
+            TextBox textBox = new TextBox
             {
-                distance = Math.Sqrt(Math.Pow(Particles[0].PositionX - Particles[i].PositionX, 2) + Math.Pow(Particles[0].PositionY - Particles[i].PositionY, 2));
-                if (Math.Floor(distance) < 15.0)
-                {
-                    score.Text = $"Score = {++Score}";
-                    canvas.Children.Remove(Particles[i].shape);
-                    Particles[i].Dispose();
-                    Particles.RemoveAt(i);
-                    Particle tail = new Particle(window.Width, window.Height, Brushes.White);
-                    Tail.Add(tail);
-                    canvas.Children.Add(tail.shape);
-                    flag = true;
-                }
-            }
-            return flag;
+                Text = $"Score = {0}"
+            };
+            s_log.Verbose("Score box created...");
+            canvas.Children.Add (textBox);
+            return textBox;
         }
     }
 }

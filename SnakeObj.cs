@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Serilog;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,46 +10,54 @@ using System.Windows.Media;
 
 namespace Snake
 {
-    public static class SnakeObj
+    public class SnakeObj
     {
-        public static void CreateSnakeHead(Canvas canvas, Window window, List<Particle> Particles, TextBox score)
+        #region Logger
+        private static Serilog.ILogger s_log = new LoggerConfiguration().WriteTo.Console().MinimumLevel.Verbose().CreateLogger().ForContext(typeof(SnakeObj));
+        #endregion
+
+        public void CreateSnakeHead(Canvas canvas, Window window, List<Particle> Tail)
         {
-            Particle particle = new Particle(window.Width, window.Height, Brushes.Green);
-            Particles.Add(particle);
-            Canvas.SetLeft(particle.shape, window.Width / 2.0);
-            Canvas.SetTop(particle.shape, window.Height / 2.0);
-            canvas.Children.Add(particle.shape);
-            canvas.Children.Add(score);
+            s_log.Verbose("Creating snake head...");
+            Particle snakeHead = new Particle(window.Width, window.Height, Brushes.Green);
+            Tail.Add(snakeHead);
+            Canvas.SetLeft(snakeHead.shape, window.Width / 2.0);
+            Canvas.SetTop(snakeHead.shape, window.Height / 2.0);
+            canvas.Children.Add(snakeHead.shape);
+            s_log.Verbose("Snake head created...");
         }
 
-        public static void AddTail(List<Particle> Particles, List<Particle> tail)
+        public void AddTail(List<Particle> tail)
         {
-            var prevX = Particles[0].PositionX;
-            var prevY = Particles[0].PositionY;
+            var prevX = tail[0].PositionX;
+            var prevY = tail[0].PositionY;
             var distance = 8;
 
-            foreach (Particle p in tail)
+            if (tail.Count > 1)
             {
-                var tempX = p.PositionX;
-                var tempY = p.PositionY;
+                for (int i = 1; i < tail.Count; i++)
+                {
+                    var tempX = tail[i].PositionX;
+                    var tempY = tail[i].PositionY;
 
-                var deltaX = p.PositionX - prevX;
-                var deltaY = p.PositionY - prevY;
+                    var deltaX = tail[i].PositionX - prevX;
+                    var deltaY = tail[i].PositionY - prevY;
 
-                var magnitude = Math.Sqrt(deltaX * deltaX + deltaY * deltaY);
+                    var magnitude = Math.Sqrt(deltaX * deltaX + deltaY * deltaY);
 
-                var unitX = (magnitude > 0) ? deltaX / magnitude : 0;
-                var unitY = (magnitude > 0) ? deltaY / magnitude : 0;
+                    var unitX = (magnitude > 0) ? deltaX / magnitude : 0;
+                    var unitY = (magnitude > 0) ? deltaY / magnitude : 0;
 
-                p.PositionX = prevX + unitX * distance;
-                p.PositionY = prevY + unitY * distance;
+                    tail[i].PositionX = prevX + unitX * distance;
+                    tail[i].PositionY = prevY + unitY * distance;
 
-                prevX = tempX;
-                prevY = tempY;
+                    prevX = tempX;
+                    prevY = tempY;
 
 
-                Canvas.SetLeft(p.shape, p.PositionX);
-                Canvas.SetTop(p.shape, p.PositionY);
+                    Canvas.SetLeft(tail[i].shape, tail[i].PositionX);
+                    Canvas.SetTop(tail[i].shape, tail[i].PositionY);
+                }
             }
         }
     }

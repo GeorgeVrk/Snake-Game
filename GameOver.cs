@@ -6,12 +6,22 @@ using System.Threading.Tasks;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows;
+using Serilog;
 
 namespace Snake
 {
     internal class GameOver
     {
+        #region Logger
+        private static Serilog.ILogger s_log = new LoggerConfiguration().WriteTo.Console().MinimumLevel.Verbose().CreateLogger().ForContext(typeof(GameOver));
+        private Canvas _canvas;
+        #endregion
+
         public GameOver(Canvas canvas)
+        {
+            _canvas = canvas;
+        }
+        public void GameOverScreen()
         {
             TextBlock text = new TextBlock
             {
@@ -23,9 +33,10 @@ namespace Snake
                 Foreground = Brushes.Green,
                 TextAlignment = TextAlignment.Center
             };
-            Canvas.SetLeft(text, (canvas.Width / 2.0) - 200);
-            Canvas.SetTop(text, (canvas.Height / 2.0) - 25);
-            canvas.Children.Add(text);
+            Canvas.SetLeft(text, (_canvas.Width / 2.0) - 200);
+            Canvas.SetTop(text, (_canvas.Height / 2.0) - 25);
+            s_log.Information("Game Over...");
+            _canvas.Children.Add(text);
         }
     }
 }
