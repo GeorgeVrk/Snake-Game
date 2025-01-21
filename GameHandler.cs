@@ -83,6 +83,9 @@ namespace Snake
             s_log.Information("Game started succesfully...");
             window.Content = canvas;
             app.Run(window);
+
+            // TODO: ADD A STOP RENDER METHOD
+
         }
 
         private static void HandleMovementChange(Directions? newDirections)
