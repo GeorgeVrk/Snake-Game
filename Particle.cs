@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Serilog;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,6 +11,10 @@ namespace Snake
 {
     public class Particle : IDisposable
     {
+        #region Logger
+        private static Serilog.ILogger s_log = new LoggerConfiguration().WriteTo.Console().MinimumLevel.Verbose().CreateLogger().ForContext(typeof(Program));
+        #endregion
+
         public Shape shape { get; set; }
         public double PositionX { get; set; }
         public double PositionY { get; set; }
@@ -49,6 +54,7 @@ namespace Snake
                 disposed = true;
             }
         }
+
         ~Particle()
         {
             Dispose(false);
