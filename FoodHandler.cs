@@ -6,11 +6,16 @@ using System.Threading.Tasks;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows;
+using Serilog;
 
 namespace Snake
 {
     internal class FoodHandler
     {
+        #region Logger
+        private static Serilog.ILogger s_log = new LoggerConfiguration().WriteTo.Console().MinimumLevel.Verbose().CreateLogger().ForContext(typeof(Program));
+        #endregion
+
         private Window window;
         private Canvas canvas;
         private List<Particle> Food;
@@ -33,6 +38,7 @@ namespace Snake
                 Canvas.SetLeft(particle.shape, particle.PositionX);
                 Canvas.SetTop(particle.shape, particle.PositionY);
                 canvas.Children.Add(particle.shape);
+                s_log.Information($"Spawning food at X : {particle.PositionX}, Y : {particle.PositionY}");
             }
         }
 

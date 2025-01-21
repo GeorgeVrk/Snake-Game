@@ -24,7 +24,7 @@ namespace Snake
             Canvas.SetLeft(snakeHead.shape, window.Width / 2.0);
             Canvas.SetTop(snakeHead.shape, window.Height / 2.0);
             canvas.Children.Add(snakeHead.shape);
-            s_log.Verbose("Snake head created...");
+            s_log.Verbose("Snake head created succesfully...");
         }
 
         public void AddTail(List<Particle> tail)

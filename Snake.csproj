@@ -78,6 +78,7 @@
     <Compile Include="Directions.cs" />
     <Compile Include="FoodHandler.cs" />
     <Compile Include="GameHandler.cs" />
+    <Compile Include="PhysicsHandler.cs" />
     <Compile Include="GameOver.cs" />
     <Compile Include="Particle.cs" />
     <Compile Include="Program.cs" />

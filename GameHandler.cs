@@ -1,116 +1,138 @@
-﻿using System;
+﻿using Serilog;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media.Media3D;
 using System.Windows.Media;
+using System.Windows;
 
 namespace Snake
 {
-    internal class GameHandler
+    internal static class GameHandler
     {
-        private Window window;
-        private Canvas canvas;
-        private Directions? direction;
-        private static int Score = 0;
+        #region Logger
+        private static Serilog.ILogger s_log = new LoggerConfiguration().WriteTo.Console().MinimumLevel.Verbose().CreateLogger().ForContext(typeof(Program));
+        #endregion
 
+        #region Properties
+        private static double Width = 1300;
+        private static double Height = 740;
+        private static Directions? direction = null;
+        private static List<Particle> Particles = new List<Particle>();
+        private static List<Particle> Tail = new List<Particle>();
+        private static FoodHandler foodHandler;
+        private static PhysicsHandler gameHandler;
+        private static GameOver gameOver;
+        private static ComponentHandler compHandler;
+        private static Application app;
+        private static Canvas canvas;
+        private static TextBox scoreBox;
+        private static Window window;
+        private static SnakeObj snake;
+        #endregion
 
-        public GameHandler(Window window, Canvas canvas, Directions? direction) 
+        public static void StartGame()
         {
-            this.window = window;
-            this.canvas = canvas;
-            this.direction = direction;
+            s_log.Information($"Initializing Components...");
+            InitialiazeComponents();
+            s_log.Information($"Starting game...");
+            BeginRender();
         }
 
-        public bool Update(Canvas canvas, Directions? dir, List<Particle> Tail)
+        public static void InitialiazeComponents()
         {
-            Particle particle = Tail[0];
-            var flag = false;
-            if (!CheckBounds(canvas, particle))
+            window = CreateWindow();
+            canvas = CreateCanvas();
+            scoreBox = CreateScoreBox(canvas);
+            app = new Application();
+            foodHandler = new FoodHandler(window, canvas, Particles);
+            gameHandler = new PhysicsHandler(window, canvas, direction);
+            gameOver = new GameOver(canvas);
+            compHandler = new ComponentHandler(window);
+            compHandler.OnDirectionChanged += HandleMovementChange;
+            compHandler.MonitorMovement();
+            snake = new SnakeObj();
+            snake.CreateSnakeHead(canvas, window, Tail);
+        }
+
+        public static void BeginRender()
+        {
+            CompositionTarget.Rendering += (s, d) =>
             {
-                switch (dir)
+                if (direction != null)
                 {
-                    case Directions.UP:
-                        particle.PositionY = particle.PositionY - 1;
-                        break;
-                    case Directions.DOWN:
-                        particle.PositionY = particle.PositionY + 1;
-                        break;
-                    case Directions.LEFT:
-                        particle.PositionX = particle.PositionX - 1;
-                        break;
-                    case Directions.RIGHT:
-                        particle.PositionX = particle.PositionX + 1;
-                        break;
-                };
-            }
-            else
-            {
-                direction = null;
-                flag = true;
-            }
-
-            Canvas.SetLeft(particle.shape, particle.PositionX);
-            Canvas.SetTop(particle.shape, particle.PositionY);
-            return flag;
-        }
-
-        public bool CheckBounds(Canvas canvas, Particle particle)
-        {
-            var flag = false;
-            if (particle.PositionY > canvas.Height - particle.shape.Width)
-            {
-                direction = null;
-                particle.PositionY = canvas.Height + 1;
-                Canvas.SetTop(particle.shape, particle.PositionY);
-                flag = true;
-            }
-            if (particle.PositionY - particle.shape.Width < 0)
-            {
-                direction = null;
-                particle.PositionY = -1;
-                Canvas.SetTop(particle.shape, particle.PositionY);
-                flag = true;
-            }
-            if (particle.PositionX > canvas.Width)
-            {
-                direction = null;
-                particle.PositionX = canvas.Width + 1;
-                Canvas.SetLeft(particle.shape, particle.PositionX);
-                flag = true;
-            }
-            if (particle.PositionX - particle.shape.Width < 0)
-            {
-                direction = null;
-                particle.PositionX = -1;
-                Canvas.SetLeft(particle.shape, particle.PositionX);
-                flag = true;
-            }
-            return flag;
-        }
-
-        public bool CheckCollision(TextBox scoreBox, List<Particle> Particles, List<Particle> Tail)
-        {
-            double distance;
-            var flag = false;
-            for (int i = 0; i < Particles.Count; i++)
-            {
-                distance = Math.Sqrt(Math.Pow(Tail[0].PositionX - Particles[i].PositionX, 2) + Math.Pow(Tail[0].PositionY - Particles[i].PositionY, 2));
-                if (Math.Floor(distance) < 15.0)
-                {
-                    scoreBox.Text = $"Score = {++Score}";
-                    canvas.Children.Remove(Particles[i].shape);
-                    Particles[i].Dispose();
-                    Particles.RemoveAt(i);
-                    Particle tail = new Particle(window.Width, window.Height, Brushes.White);
-                    Tail.Add(tail);
-                    canvas.Children.Add(tail.shape);
-                    flag = true;
+                    if (gameHandler.Update(canvas, direction, Tail))
+                    {
+                        gameOver.GameOverScreen();
+                    }
+                    else
+                    {
+                        int n = 1;
+                        if (foodHandler.GetFoodList().Count < n)
+                        {
+                            foodHandler.SpawnRandomParticles(n);
+                        }
+                        gameHandler.CheckCollision(scoreBox, Particles, Tail);
+                        snake.AddTail(Tail);
+                    }
                 }
-            }
-            return flag;
+            };
+            s_log.Information("Game started succesfully...");
+            window.Content = canvas;
+            app.Run(window);
+        }
+
+        private static void HandleMovementChange(Directions? newDirections)
+        {
+            direction = newDirections;
+        }
+
+        public static Window CreateWindow()
+        {
+            s_log.Verbose("Creating window...");
+
+            Window window = new Window
+            {
+                Width = Width,
+                Height = Height,
+                Title = "Snake Game"
+            };
+
+            window.Focus();
+            s_log.Verbose("Window Created succesfully...");
+
+            return window;
+        }
+
+        public static Canvas CreateCanvas()
+        {
+            s_log.Verbose("Creating canvas...");
+
+            Canvas canvas = new Canvas
+            {
+                Width = 1280,
+                Height = 720,
+                Background = Brushes.Black
+            };
+            s_log.Verbose("Canvas created succesfully...");
+
+            return canvas;
+        }
+
+        public static TextBox CreateScoreBox(Canvas canvas)
+        {
+            s_log.Verbose("Creating score box...");
+
+            TextBox textBox = new TextBox
+            {
+                Text = $"Score = {0}"
+            };
+            s_log.Verbose("Score box created succesfully...");
+            canvas.Children.Add(textBox);
+            return textBox;
         }
     }
 }
