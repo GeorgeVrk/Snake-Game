@@ -24,7 +24,7 @@ namespace Snake
              _window.KeyDown += Movement;
         }
 
-        public void Movement(object sender, KeyEventArgs e)
+        private void Movement(object sender, KeyEventArgs e)
         {
             Directions? newDirections = null;
             switch (e.Key)

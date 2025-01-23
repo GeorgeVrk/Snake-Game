@@ -42,7 +42,7 @@ namespace Snake
             BeginRender();
         }
 
-        public static void InitialiazeComponents()
+        private static void InitialiazeComponents()
         {
             window = CreateWindow();
             canvas = CreateCanvas();
@@ -58,34 +58,39 @@ namespace Snake
             snake.CreateSnakeHead(canvas, window, Tail);
         }
 
-        public static void BeginRender()
+        private static void BeginRender()
         {
-            CompositionTarget.Rendering += (s, d) =>
-            {
-                if (direction != null)
-                {
-                    if (gameHandler.Update(canvas, direction, Tail))
-                    {
-                        gameOver.GameOverScreen();
-                    }
-                    else
-                    {
-                        int n = 1;
-                        if (foodHandler.GetFoodList().Count < n)
-                        {
-                            foodHandler.SpawnRandomParticles(n);
-                        }
-                        gameHandler.CheckCollision(scoreBox, Particles, Tail);
-                        snake.AddTail(Tail);
-                    }
-                }
-            };
+            CompositionTarget.Rendering += RenderFrame;
             s_log.Information("Game started succesfully...");
             window.Content = canvas;
             app.Run(window);
+        }
 
-            // TODO: ADD A STOP RENDER METHOD
+        private static void StopRender()
+        {
+            CompositionTarget.Rendering -= RenderFrame;
+        }
 
+        private static void RenderFrame(object sender, EventArgs e)
+        {
+            if (direction != null)
+            {
+                if (gameHandler.Update(canvas, direction, Tail))
+                {
+                    gameOver.GameOverScreen();
+                    StopRender();
+                }
+                else
+                {
+                    int n = 1;
+                    if (foodHandler.GetFoodList().Count < n)
+                    {
+                        foodHandler.SpawnRandomParticles(n);
+                    }
+                    gameHandler.CheckCollision(scoreBox, Particles, Tail);
+                    snake.AddTail(Tail);
+                }
+            }
         }
 
         private static void HandleMovementChange(Directions? newDirections)
@@ -93,7 +98,7 @@ namespace Snake
             direction = newDirections;
         }
 
-        public static Window CreateWindow()
+        private static Window CreateWindow()
         {
             s_log.Verbose("Creating window...");
 
@@ -110,7 +115,7 @@ namespace Snake
             return window;
         }
 
-        public static Canvas CreateCanvas()
+        private static Canvas CreateCanvas()
         {
             s_log.Verbose("Creating canvas...");
 
@@ -125,7 +130,7 @@ namespace Snake
             return canvas;
         }
 
-        public static TextBox CreateScoreBox(Canvas canvas)
+        private static TextBox CreateScoreBox(Canvas canvas)
         {
             s_log.Verbose("Creating score box...");
 
