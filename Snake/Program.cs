@@ -50,6 +50,8 @@ namespace Snake
                 }
                 else
                 {
+                    s_log.Error("No arguments passed to the debugger.");
+                    Console.ReadKey();
                     throw new ArgumentException("No valid option selected. Use -a for auto or -m for manual.");
                 }
             }
