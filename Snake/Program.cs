@@ -14,6 +14,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using Serilog;
+using QLearning;
 
 namespace Snake
 {
@@ -45,7 +46,7 @@ namespace Snake
                 }
                 else if (o.auto)
                 {
-                   
+                    QLearningProgram.Start();
                 }
                 else
                 {

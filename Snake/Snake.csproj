@@ -96,5 +96,11 @@
     <None Include="App.config" />
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\QLearning\QLearning.csproj">
+      <Project>{736ac0b9-8f67-4321-b9f4-ce3b76265f49}</Project>
+      <Name>QLearning</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
