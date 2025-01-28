@@ -96,11 +96,5 @@
     <None Include="App.config" />
     <None Include="packages.config" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\AI.Test\AI.Test.csproj">
-      <Project>{8c51008b-cb35-4d30-b8aa-5f2a741cb635}</Project>
-      <Name>AI.Test</Name>
-    </ProjectReference>
-  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
