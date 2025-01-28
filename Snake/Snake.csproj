@@ -32,11 +32,13 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
-<PropertyGroup>
+  <PropertyGroup>
     <RestorePackagesPath>$(MSBuildThisFileDirectory)packages</RestorePackagesPath>
-</PropertyGroup>
-
+  </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Mono.Options, Version=6.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>packages\Mono.Options.6.12.0.148\lib\net40\Mono.Options.dll</HintPath>
+    </Reference>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
     <Reference Include="Serilog, Version=4.2.0.0, Culture=neutral, PublicKeyToken=24c2f752a8e58a10, processorArchitecture=MSIL">
@@ -82,6 +84,7 @@
     <Compile Include="Directions.cs" />
     <Compile Include="FoodHandler.cs" />
     <Compile Include="GameHandler.cs" />
+    <Compile Include="Options.cs" />
     <Compile Include="PhysicsHandler.cs" />
     <Compile Include="GameOver.cs" />
     <Compile Include="Particle.cs" />
@@ -91,7 +94,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
-    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\AI.Test\AI.Test.csproj">
+      <Project>{8c51008b-cb35-4d30-b8aa-5f2a741cb635}</Project>
+      <Name>AI.Test</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
