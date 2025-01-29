@@ -11,22 +11,22 @@ using System.Windows;
 
 namespace Snake
 {
-    internal static class GameHandler
+    public static class GameHandler
     {
         #region Logger
         private static Serilog.ILogger s_log = new LoggerConfiguration().WriteTo.Console().MinimumLevel.Verbose().CreateLogger().ForContext(typeof(Program));
         #endregion
 
         #region Properties
-        private static double Width = 1300;
-        private static double Height = 740;
+        public static double Width = 1300;
+        public static double Height = 740;
         private static Directions? direction = null;
         private static List<Particle> Particles = new List<Particle>();
-        private static List<Particle> Tail = new List<Particle>();
-        private static FoodHandler foodHandler;
+        public static List<Particle> Tail = new List<Particle>();
+        public static FoodHandler foodHandler;
         private static PhysicsHandler gameHandler;
         private static GameOver gameOver;
-        private static ComponentHandler compHandler;
+        public static ComponentHandler compHandler;
         private static Application app;
         private static Canvas canvas;
         private static TextBox scoreBox;

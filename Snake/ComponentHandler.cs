@@ -9,7 +9,7 @@ using System.Windows.Input;
 
 namespace Snake
 {
-    internal class ComponentHandler
+    public class ComponentHandler
     {
         private Window _window;
         private Directions? direction;
@@ -63,6 +63,12 @@ namespace Snake
                 direction = newDirections.Value;
                 OnDirectionChanged?.Invoke(direction.Value);
             }
+        }
+
+        public void ChangeDirection(Directions? d)
+        {
+            direction = d.Value;
+            OnDirectionChanged?.Invoke(direction.Value);
         }
     }
 }

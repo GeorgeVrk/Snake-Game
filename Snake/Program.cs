@@ -46,7 +46,8 @@ namespace Snake
                 }
                 else if (o.auto)
                 {
-                    QLearningProgram.Start();
+                    //QLearningProgram.Start();
+                    
                 }
                 else
                 {

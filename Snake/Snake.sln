@@ -12,6 +12,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Snake", "Snake.csproj", "{1
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QLearning", "..\QLearning\QLearning.csproj", "{736AC0B9-8F67-4321-B9F4-CE3B76265F49}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SnakeRL", "..\SnakeRL\SnakeRL.csproj", "{94AF23B3-4EC5-42DA-A03B-19C415BCD05F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -26,6 +28,10 @@ Global
 		{736AC0B9-8F67-4321-B9F4-CE3B76265F49}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{736AC0B9-8F67-4321-B9F4-CE3B76265F49}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{736AC0B9-8F67-4321-B9F4-CE3B76265F49}.Release|Any CPU.Build.0 = Release|Any CPU
+		{94AF23B3-4EC5-42DA-A03B-19C415BCD05F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{94AF23B3-4EC5-42DA-A03B-19C415BCD05F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{94AF23B3-4EC5-42DA-A03B-19C415BCD05F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{94AF23B3-4EC5-42DA-A03B-19C415BCD05F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

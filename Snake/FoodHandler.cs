@@ -10,7 +10,7 @@ using Serilog;
 
 namespace Snake
 {
-    internal class FoodHandler
+    public class FoodHandler
     {
         #region Logger
         private static Serilog.ILogger s_log = new LoggerConfiguration().WriteTo.Console().MinimumLevel.Verbose().CreateLogger().ForContext(typeof(Program));
@@ -18,7 +18,7 @@ namespace Snake
 
         private Window window;
         private Canvas canvas;
-        private List<Particle> Food;
+        public List<Particle> Food;
         private Random random = new Random();
 
         public FoodHandler(Window window, Canvas canvas, List<Particle> Food) 
