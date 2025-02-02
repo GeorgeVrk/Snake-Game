@@ -10,7 +10,7 @@ using System.Windows.Media;
 
 namespace Snake
 {
-    internal class PhysicsHandler
+    public class PhysicsHandler
     {
         #region Logger
         private static Serilog.ILogger s_log = new LoggerConfiguration().WriteTo.Console().MinimumLevel.Verbose().CreateLogger().ForContext(typeof(Program));

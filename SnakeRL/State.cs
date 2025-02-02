@@ -1,120 +1,235 @@
 ﻿using Snake;
 using System;
 using System.Collections.Generic;
+using Serilog;
+using System.Windows.Media;
+using System.Runtime.CompilerServices;
 
 namespace SnakeRL
 {
     public static class State
     {
+        #region Logger
+        private static Serilog.ILogger s_log = new LoggerConfiguration().WriteTo.Console().MinimumLevel.Verbose().CreateLogger().ForContext(typeof(Program));
+        #endregion
+
         public static int gridWidth = (int)GameHandler.Width;
         public static int gridHeight = (int)GameHandler.Height;
-        public static Dictionary<int, List<int>> FT = new Dictionary<int, List<int>>();
-        public static Dictionary<int, double> R = new Dictionary<int, double>();
+        public static int ns = gridHeight * gridWidth;
+        public static Dictionary<(int state, int action), double> R = new Dictionary<(int state, int action), double>();
+        public static Dictionary<(int state, int nextState), bool> FT = new Dictionary<(int i, int j), bool>();
         public static Dictionary<(int state, int action), double> Q = new Dictionary<(int, int), double>();
 
-        public static void SetState()
-        {
-            for (int x = 0; x < gridWidth; x++)
-            {
-                for (int y = 0; y < gridHeight; y++)
-                {
-                    int state = y * gridWidth + x;
-                    FT[state] = new List<int>();
+        public static Random rnd = new Random();
+        public static double gamma = 0.95;
+        public static double lrnRate = 0.2;
+        public static double epsilon = 1.0;
+        public static double epsilonDecay = 0.998;
+        public static double epsilonMin = 0.01;
 
-                    if (x > 0) FT[state].Add((int)Directions.LEFT);
-                    if (x < gridWidth - 1) FT[state].Add((int)Directions.RIGHT);
-                    if (y > 0) FT[state].Add((int)Directions.UP);
-                    if (y < gridHeight - 1) FT[state].Add((int)Directions.DOWN);
-                }
+        public enum Action { Up = 0, Down = 1, Left = 2, Right = 3 }
+
+        public static Dictionary<(int state, int action), double> SetReward(Particle foodState)
+        {
+            int state = (int)foodState.PositionY * gridWidth + (int)(foodState.PositionX);
+            R.Add((state, 5), 100);
+            return R;
+        }
+
+        public static double GetReward(int currState, int action, int goal)
+        {
+            int nextState = GetNextState(currState, action);
+
+            if (nextState == goal)
+                return 100.0;
+
+            if (currState == goal)
+                return 100.0;
+
+            int currX = currState % gridWidth, currY = currState / gridWidth;
+            int goalX = goal % gridWidth, goalY = goal / gridWidth;
+            int currDist = Math.Abs(currX - goalX) + Math.Abs(currY - goalY);
+
+            int modThreshold = 1000;
+            int modValue = currDist % modThreshold;
+
+            if (modValue == 0)
+                return 10.0; 
+            else if (modValue < 150)
+                return 0.5; 
+            else
+                return -1.0; 
+        }
+
+        public static void InitializeFT()
+        {
+            for (int i = 0; i < ns; i++)
+            {
+                int x = i % gridWidth;
+                int y = i / gridWidth;
+
+                // Left
+                if (x > 0)
+                    FT[(i, i - 1)] = true;
+
+                // Right
+                if (x < gridWidth - 1)
+                    FT[(i, i + 1)] = true;
+
+                // Up
+                if (y > 0)
+                    FT[(i, i - gridWidth)] = true;
+
+                // Down
+                if (y < gridHeight - 1)
+                    FT[(i, i + gridWidth)] = true;
             }
         }
 
-        public static void SetReward()
+        public static void Train()
         {
-            foreach (var state in FT.Keys)
-                R[state] = -0.1; 
+            Particle par = new Particle(gridHeight,gridWidth, Brushes.White);
+            Particle foodPar = new Particle(gridHeight, gridWidth, Brushes.White);
 
-            int foodState = (int)(GameHandler.foodHandler.Food[0].PositionY * gridWidth + GameHandler.foodHandler.Food[0].PositionX);
-            R[foodState] = 10.0; 
+            int start = (int)(par.PositionX * gridWidth + par.PositionY);
+            int goal = (int)(499 * gridWidth + 500);
 
-            foreach (var segment in GameHandler.Tail)
-            {
-                int snakeState = (int)(segment.PositionY * gridWidth + segment.PositionX);
-                R[snakeState] = -10.0; 
-            }
+            Console.WriteLine("Starting training...");
+            Train(start, goal, 1000);
+            Console.WriteLine("Training complete!");
+
+            Console.WriteLine("Simulating learned policy...");
+            Simulate(start, goal);
         }
 
-        public static void Train(int episodes, double alpha, double gamma, double epsilon)
+
+        public static void Train(int start, int goal, int maxEpochs)
         {
-            GameHandler.StartGame();
-            Random rnd = new Random();
-            for (int episode = 0; episode < episodes; episode++)
+            InitializeFT();
+
+            for (int epoch = 0; epoch < maxEpochs; epoch++)
             {
-                int x = gridWidth / 2;
-                int y = gridHeight / 2;
-                int state = y * gridWidth + x;
+                int currState = start;
+                int steps = 0;
 
                 while (true)
                 {
-                    int action = (rnd.NextDouble() < epsilon) ? rnd.Next(0, 4) : GetBestAction(state);
-                    GameHandler.compHandler.ChangeDirection((Directions)action);
-                    Console.WriteLine(action);
-                    int newX = x, newY = y;
-                    switch ((Directions)action)
+                    int action;
+                    if (rnd.NextDouble() < epsilon) 
+                        action = rnd.Next(0, 4);
+                    else 
+                        action = GetBestAction(currState);
+
+                    int nextState = GetNextState(currState, action);
+                    double reward = GetReward(currState, action, goal);
+                  
+                    double maxQ = 0.0;
+                    for (int a = 0; a < 4; a++) 
                     {
-                        case Directions.UP: if (y > 0) newY--; break;
-                        case Directions.DOWN: if (y < gridHeight - 1) newY++; break;
-                        case Directions.LEFT: if (x > 0) newX--; break;
-                        case Directions.RIGHT: if (x < gridWidth - 1) newX++; break;
+                        double qValue = Q.ContainsKey((nextState, a)) ? Q[(nextState, a)] : 0.0;
+                        if (qValue > maxQ)
+                            maxQ = qValue;
                     }
-                    int newState = newY * gridWidth + newX;
 
-                    double maxQ = GetMaxQ(newState);
-                    double reward = R.ContainsKey(newState) ? R[newState] : -0.1;
+                    double oldQ = Q.ContainsKey((currState, action)) ? Q[(currState, action)] : 0.0;
+                    Q[(currState, action)] = oldQ + lrnRate * (reward + gamma * maxQ - oldQ);
 
-                    if (!Q.ContainsKey((state, action))) Q[(state, action)] = 0;
-                    Q[(state, action)] = (1 - alpha) * Q[(state, action)] + alpha * (reward + gamma * maxQ);
+                    
+                    Console.WriteLine($"Epoch: {epoch}, State: {currState}, Action: {action}, Next State: {nextState}, Reward: {reward}, Q-Value: {Q[(currState, action)]}, Goal State: {goal}");
 
-                    state = newState;
-                    x = newX;
-                    y = newY;
+                    currState = nextState;
+                    steps++;
 
-                    if (reward == 10.0 || reward == -10.0) break;
+                    
+                    if (currState == goal)
+                    {
+                        Console.WriteLine($"Goal reached in epoch {epoch} after {steps} steps.");
+                        break;
+                    }
                 }
+
+                
+                epsilon = Math.Max(epsilon * epsilonDecay, epsilonMin);
             }
         }
+
+        public static void Simulate(int start, int goal)
+        {
+            int currState = start;
+            Console.Write($"Path: {currState}");
+
+            while (currState != goal)
+            {
+                int action = GetBestAction(currState);
+                int nextState = GetNextState(currState, action);
+
+                Console.Write($" -> {nextState}");
+                currState = nextState;
+            }
+
+            Console.WriteLine("\nSimulation complete!");
+            Console.ReadKey();
+        }
+
+        public static int GetNextState(int currState, int action)
+        {
+            int x = currState % gridWidth;
+            int y = currState / gridWidth;
+
+            switch (action)
+            {
+                case (int)Action.Up: y--; break;
+                case (int)Action.Down: y++; break;
+                case (int)Action.Left: x--; break;
+                case (int)Action.Right: x++; break;
+            }
+
+      
+            x = Clamp(x, 0, gridWidth - 1);
+            y = Clamp(y, 0, gridHeight - 1);
+
+            return y * gridWidth + x;
+        }
+
 
         public static int GetBestAction(int state)
         {
-            if (!FT.ContainsKey(state)) return 0; 
+            double bestQValue = double.MinValue;
+            int bestAction = -1;
 
-            double maxQ = double.MinValue;
-            int bestAction = 0;
-
-            foreach (int action in FT[state])
+            for (int action = 0; action < 4; action++) 
             {
-                if (Q.ContainsKey((state, action)) && Q[(state, action)] > maxQ)
+                double qValue = Q.ContainsKey((state, action)) ? Q[(state, action)] : 0.0;
+                if (qValue > bestQValue)
                 {
-                    maxQ = Q[(state, action)];
+                    bestQValue = qValue;
                     bestAction = action;
                 }
             }
+
             return bestAction;
         }
 
-        public static double GetMaxQ(int state)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int Clamp(int value, int min, int max)
         {
-            if (!FT.ContainsKey(state)) return 0; 
-
-            double maxQ = double.MinValue;
-            foreach (int action in FT[state])
+            if (min > max)
             {
-                if (Q.ContainsKey((state, action)) && Q[(state, action)] > maxQ)
-                {
-                    maxQ = Q[(state, action)];
-                }
+                //ThrowMinMaxException(min, max);
             }
-            return maxQ == double.MinValue ? 0 : maxQ;
+
+            if (value < min)
+            {
+                return min;
+            }
+            else if (value > max)
+            {
+                return max;
+            }
+
+            return value;
         }
+
     }
 }
+
