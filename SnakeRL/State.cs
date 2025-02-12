@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Windows.Media;
@@ -18,8 +19,8 @@ namespace SnakeRL
         public double[][] Q = new double[ns][]; 
         public double[][] R = new double[ns][]; 
         public double gamma = 0.8; 
-        public double learningRate = 0.01; 
-        public double epsilon = 1.0; 
+        public double learningRate = 0.2; 
+        public double epsilon = 0.8; 
         public double minExplorationRate = 0.01; 
         public double explorationDecayRate = 0.995; 
 
@@ -82,7 +83,7 @@ namespace SnakeRL
                             R[nextState][j] = 1000;
                         }
                         else
-                            R[i][j] = -1;
+                            R[i][j] = -5;
                     }
                     else
                     {
@@ -119,84 +120,83 @@ namespace SnakeRL
 
         public void Train()
         {
+            string filename = "Qtable.json";
             Particle snake = new Particle(gridWidth, gridHeight, Brushes.White);
-            snake.PositionX = 13;
-            snake.PositionY = 5;
+            snake.PositionX = 3;
+            snake.PositionY = 18;
             int snakeState = (int)(snake.PositionY * gridWidth + snake.PositionX);
             Particle food = new Particle(gridWidth, gridHeight, Brushes.White);
-            food.PositionX = 18;
-            food.PositionY = 18;
+            food.PositionX = 3;
+            food.PositionY = 17;
             int goal = (int)(food.PositionY * gridWidth + food.PositionX);
             int[][] FT = CreateEnviroment(ns);
-            double[][] R = CreateReward(ns, goal, FT);
             double[][] Q = CreateQuality(ns);
-            Train(FT, R, Q, goal, gamma, learningRate, 8000, epsilon);
+            if (File.Exists(filename))
+            {
+                Q = LoadQTable(filename);
+                //Train(FT, Q, gamma, learningRate, 1000000, epsilon);
+                //SaveQTable(filename, Q);
+            }
+            else
+            {
+                Train(FT, Q, gamma, learningRate, 1000000, epsilon);
+                SaveQTable(filename, Q);
+            }
             Console.WriteLine($"Walking from state {snakeState} to state {goal}");
             Thread.Sleep(1000);
             Walk(snakeState, goal, Q, FT);
             Console.ReadKey();
         }
 
-        public void Train(int[][] FT, double[][] R, double[][] Q, int goal, double gamma, double lrnRate, int maxEpochs, double epsilon)
+        public void Train(int[][] FT, double[][] Q, double gamma, double lrnRate, int maxEpochs, double epsilon)
         {
+            List<int> goals = Enumerable.Range(0, ns).ToList(); // List of all possible goals
+
             for (int epoch = 0; epoch < maxEpochs; ++epoch)
             {
-                int steps = 0;
-                int currState = rnd.Next(0, R.Length); 
-                int action;
+                int goal = goals[rnd.Next(goals.Count)];  // Pick a random goal for this episode
+                double[][] R = CreateReward(ns, goal, FT); // Create reward table for this goal
+
+                int currState = rnd.Next(0, ns); // Start from a random state
                 int nextState = currState;
+                int steps = 0;
+
                 while (true)
                 {
-                    
                     List<int> possNextStates = GetPossNextStates(currState, FT);
 
-                    
-                    if (rnd.NextDouble() < epsilon)
-                    {
-                        action = rnd.Next(0, 4); 
-                    }
-                    else
-                    {
-                        action = ArgMax(Q[currState]);
-                    }
+                    // Epsilon-Greedy Action Selection
+                    int action = (rnd.NextDouble() < epsilon) ? rnd.Next(0, 4) : ArgMax(Q[currState]);
 
-                    if (action == 0 && currState >= gridWidth)  // Move Up
-                        nextState = currState - gridWidth;
-                    else if (action == 1 && (currState + 1) % gridWidth != 0)  // Move Right
-                        nextState = currState + 1;
-                    else if (action == 2 && currState < ns - gridWidth)  // Move Down
-                        nextState = currState + gridWidth;
-                    else if (action == 3 && currState % gridWidth != 0)  // Move Left
-                        nextState = currState - 1;
+                    // Determine next state based on action
+                    if (action == 0 && currState >= gridWidth) nextState = currState - gridWidth;  // Move Up
+                    else if (action == 1 && (currState + 1) % gridWidth != 0) nextState = currState + 1; // Move Right
+                    else if (action == 2 && currState < ns - gridWidth) nextState = currState + gridWidth; // Move Down
+                    else if (action == 3 && currState % gridWidth != 0) nextState = currState - 1; // Move Left
 
-                    
-                    double maxQ = double.MinValue;
-                    for (int j = 0; j < Q[nextState].Length; ++j)
-                    {
-                        double q = Q[nextState][j];
-                        if (q > maxQ)
-                        {
-                            maxQ = q;
-                        }
-                    }
+                    // Get max Q-value for the next state
+                    double maxQ = Q[nextState].Max();
 
-                    
-                    Q[currState][action] = ((1 - lrnRate) * Q[currState][action]) + (lrnRate * (R[currState][action] + (gamma * maxQ)));
+                    // Q-Learning Update Rule
+                    Q[currState][action] = ((1 - lrnRate) * Q[currState][action]) +
+                                           (lrnRate * (R[currState][action] + (gamma * maxQ)));
 
-                   
                     currState = nextState;
                     steps++;
 
-                   
+                    // Stop if goal is reached
                     if (currState == goal) break;
                 }
-                Console.WriteLine($"Finished episode {epoch} in {steps} steps.");
+
+                // Decay epsilon **AFTER EACH EPISODE** for better generalization
                 if (epsilon > 0.1)
-                {
-                    epsilon *= 0.99; 
-                }
+                    epsilon *= 0.995;
+
+                if (epoch % 1000 == 0)
+                    Console.WriteLine($"Finished {epoch}nth episode.");
             }
         }
+
 
 
         public void Walk(int start, int goal, double[][] Q, int[][] FT)
