@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text.Json;
 using System.Threading;
 using System.Windows.Media;
 
@@ -15,12 +14,10 @@ namespace SnakeRL
         public static int gridWidth = 20;
         public static int gridHeight = 20;
         public static int ns = gridWidth * gridHeight; 
-        public int[][] FT = new int[ns][];
-        public double[][] Q = new double[ns][]; 
-        public double[][] R = new double[ns][]; 
-        public double gamma = 0.8; 
-        public double learningRate = 0.2; 
-        public double epsilon = 0.8; 
+        public int[][] FT = new int[ns][]; 
+        public double gamma = 0.99; 
+        public double learningRate = 0.1; 
+        public double epsilon = 0.5; 
         public double minExplorationRate = 0.01; 
         public double explorationDecayRate = 0.995; 
 
@@ -83,11 +80,11 @@ namespace SnakeRL
                             R[nextState][j] = 1000;
                         }
                         else
-                            R[i][j] = -5;
+                            R[i][j] = -4;
                     }
                     else
                     {
-                        R[i][j] = -100;
+                        R[i][j] = -50;
                     }
                 }
             }
@@ -95,69 +92,37 @@ namespace SnakeRL
             return R;
         }
 
-        public double[][] LoadQTable(string filename)
-        {
-            if (!File.Exists(filename))
-            {
-                Console.WriteLine("File not found: " + filename);
-                return null;
-            }
-
-            string json = File.ReadAllText(filename);
-            double[][] Q = JsonSerializer.Deserialize<double[][]>(json);
-            Console.WriteLine("Q-table loaded from " + filename);
-            return Q;
-        }
-
-        public void SaveQTable(string filename, double[][] Q)
-        {
-        string json = JsonSerializer.Serialize(Q);
-        File.WriteAllText(filename, json);
-        Console.WriteLine("Q-table saved to " + filename);
-        }
-
-
-
         public void Train()
         {
             string filename = "Qtable.json";
             Particle snake = new Particle(gridWidth, gridHeight, Brushes.White);
             snake.PositionX = 3;
-            snake.PositionY = 18;
+            snake.PositionY = 2;
             int snakeState = (int)(snake.PositionY * gridWidth + snake.PositionX);
             Particle food = new Particle(gridWidth, gridHeight, Brushes.White);
-            food.PositionX = 3;
+            food.PositionX = 13;
             food.PositionY = 17;
             int goal = (int)(food.PositionY * gridWidth + food.PositionX);
             int[][] FT = CreateEnviroment(ns);
             double[][] Q = CreateQuality(ns);
-            if (File.Exists(filename))
+            for (int i = 0; i < ns; i++)
             {
-                Q = LoadQTable(filename);
-                //Train(FT, Q, gamma, learningRate, 1000000, epsilon);
-                //SaveQTable(filename, Q);
+                for (int j = 0; j < ns; j++)
+                {
+                    Train(FT, Q, j, i, gamma, learningRate, 12000, epsilon);
+                    Walk(i, j, Q, FT);
+                }
             }
-            else
-            {
-                Train(FT, Q, gamma, learningRate, 1000000, epsilon);
-                SaveQTable(filename, Q);
-            }
-            Console.WriteLine($"Walking from state {snakeState} to state {goal}");
-            Thread.Sleep(1000);
-            Walk(snakeState, goal, Q, FT);
             Console.ReadKey();
         }
 
-        public void Train(int[][] FT, double[][] Q, double gamma, double lrnRate, int maxEpochs, double epsilon)
+        public void Train(int[][] FT, double[][] Q, int goal, int state, double gamma, double lrnRate, int maxEpochs, double epsilon)
         {
-            List<int> goals = Enumerable.Range(0, ns).ToList(); // List of all possible goals
-
             for (int epoch = 0; epoch < maxEpochs; ++epoch)
             {
-                int goal = goals[rnd.Next(goals.Count)];  // Pick a random goal for this episode
                 double[][] R = CreateReward(ns, goal, FT); // Create reward table for this goal
 
-                int currState = rnd.Next(0, ns); // Start from a random state
+                int currState = state; // Start from a random state
                 int nextState = currState;
                 int steps = 0;
 
@@ -190,10 +155,13 @@ namespace SnakeRL
 
                 // Decay epsilon **AFTER EACH EPISODE** for better generalization
                 if (epsilon > 0.1)
+                {
                     epsilon *= 0.995;
-
-                if (epoch % 1000 == 0)
-                    Console.WriteLine($"Finished {epoch}nth episode.");
+                }
+                else
+                {
+                    epsilon = 0.1;
+                }
             }
         }
 
@@ -201,6 +169,7 @@ namespace SnakeRL
 
         public void Walk(int start, int goal, double[][] Q, int[][] FT)
         {
+            Console.WriteLine($"Walking from state {start} to state {goal}");
             int curr = start;
             Console.Write(curr + "->");
 
@@ -209,7 +178,7 @@ namespace SnakeRL
                 
                 int bestAction = ArgMax(Q[curr]);
 
-                
+                int currState = curr;
                 int nextState = curr;
 
                 if (bestAction == 0 && curr >= gridWidth)  // Move Up
@@ -226,9 +195,8 @@ namespace SnakeRL
                 if (!possibleNextStates.Contains(nextState))
                 {
                     Console.WriteLine($"Blocked at {curr}, retrying...");
-                    break;  
+                    nextState = currState;
                 }
-
                 Console.Write(nextState + "->");
                 curr = nextState;
             }
