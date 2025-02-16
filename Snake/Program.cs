@@ -1,24 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics.Contracts;
-using System.IO.Ports;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Shapes;
 using Serilog;
-using QLearning;
 
 namespace Snake
 {
-    internal class Program
+    public class Program
     {
         #region Logger
         private static Serilog.ILogger s_log = new LoggerConfiguration().WriteTo.Console().MinimumLevel.Verbose().CreateLogger().ForContext(typeof(Program));
@@ -46,8 +32,10 @@ namespace Snake
                 }
                 else if (o.auto)
                 {
-                    QLearningMem.Train();
-                    
+                    var app = new Application();
+                    app.Run(RL.Components.InitializeComponents());
+                    //var State = new State();
+                    //State.Train();
                 }
                 else
                 {

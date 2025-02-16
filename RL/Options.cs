@@ -1,18 +1,13 @@
 ﻿using Mono.Options;
 using Serilog;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
-namespace SnakeRL
+namespace RL
 {
     internal class Options
     {
         #region Logger
-        private static Serilog.ILogger s_log = new LoggerConfiguration().WriteTo.Console().MinimumLevel.Verbose().CreateLogger().ForContext(typeof(Program));
+        private static Serilog.ILogger s_log = new LoggerConfiguration().WriteTo.Console().MinimumLevel.Verbose().CreateLogger().ForContext(typeof(Options));
         #endregion
 
         public bool manual = false;
