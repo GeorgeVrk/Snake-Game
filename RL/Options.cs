@@ -2,12 +2,12 @@
 using Serilog;
 using System;
 
-namespace Snake
+namespace RL
 {
     internal class Options
     {
         #region Logger
-        private static Serilog.ILogger s_log = new LoggerConfiguration().WriteTo.Console().MinimumLevel.Verbose().CreateLogger().ForContext(typeof(Program));
+        private static Serilog.ILogger s_log = new LoggerConfiguration().WriteTo.Console().MinimumLevel.Verbose().CreateLogger().ForContext(typeof(Options));
         #endregion
 
         public bool manual = false;

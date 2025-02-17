@@ -1,37 +1,33 @@
 ﻿using Serilog;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Controls;
-using System.Windows.Media.Media3D;
 using System.Windows.Media;
 using System.Windows;
 
 namespace Snake
 {
-    internal static class GameHandler
+    public static class GameHandler
     {
         #region Logger
         private static Serilog.ILogger s_log = new LoggerConfiguration().WriteTo.Console().MinimumLevel.Verbose().CreateLogger().ForContext(typeof(Program));
         #endregion
 
         #region Properties
-        private static double Width = 1300;
-        private static double Height = 740;
+        public static double Width = 1340;
+        public static double Height = 740;
         private static Directions? direction = null;
         private static List<Particle> Particles = new List<Particle>();
-        private static List<Particle> Tail = new List<Particle>();
-        private static FoodHandler foodHandler;
-        private static PhysicsHandler gameHandler;
+        public static List<Particle> Tail = new List<Particle>();
+        public static FoodHandler foodHandler;
+        public static PhysicsHandler gameHandler;
         private static GameOver gameOver;
-        private static ComponentHandler compHandler;
+        public static ComponentHandler compHandler;
         private static Application app;
         private static Canvas canvas;
         private static TextBox scoreBox;
         private static Window window;
-        private static SnakeObj snake;
+        public static SnakeObj snake;
         #endregion
 
         public static void StartGame()
@@ -42,7 +38,7 @@ namespace Snake
             BeginRender();
         }
 
-        private static void InitialiazeComponents()
+        public static void InitialiazeComponents()
         {
             window = CreateWindow();
             canvas = CreateCanvas();
@@ -58,6 +54,14 @@ namespace Snake
             snake.CreateSnakeHead(canvas, window, Tail);
         }
 
+        public static void BeginRender(Directions direction)
+        {
+            CompositionTarget.Rendering += (sender, e) => RenderFrame(sender, e, direction);
+            s_log.Information("Game started succesfully...");
+            window.Content = canvas;
+            app.Run(window);
+        }
+
         private static void BeginRender()
         {
             CompositionTarget.Rendering += RenderFrame;
@@ -66,9 +70,36 @@ namespace Snake
             app.Run(window);
         }
 
+        private static void StopRender(Directions? d = null)
+        {
+            CompositionTarget.Rendering -= (sender, e) => RenderFrame(sender, e, null);
+        }
+
         private static void StopRender()
         {
             CompositionTarget.Rendering -= RenderFrame;
+        }
+
+        private static void RenderFrame(object sender, EventArgs e, Directions? direction)
+        {
+            if (direction != null)
+            {
+                if (gameHandler.Update(canvas, direction, Tail))
+                {
+                    //gameOver.GameOverScreen();
+                    //StopRender();
+                }
+                else
+                {
+                    int n = 1;
+                    if (foodHandler.GetFoodList().Count < n)
+                    {
+                        foodHandler.SpawnRandomParticles(n);
+                    }
+                    gameHandler.CheckCollision(scoreBox, Particles, Tail);
+                    snake.AddTail(Tail);
+                }
+            }
         }
 
         private static void RenderFrame(object sender, EventArgs e)

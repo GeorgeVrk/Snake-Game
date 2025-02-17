@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+
 namespace QLearning
 {
     public static class QLearningProgram
@@ -22,7 +23,7 @@ namespace QLearning
             Console.WriteLine("Done. Q matrix: ");
             Print(Q);
             Console.WriteLine("Using Q to walk from cell 8 to 11");
-            Walk(8, 11, Q);
+            Walk(10, 11, Q);
             Console.WriteLine("End demo");
             Console.ReadLine();
         }
