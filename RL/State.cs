@@ -83,19 +83,19 @@ namespace RL
 
                         if (nextState == goal)
                         {
-                            R[nextState][j] = 500000; // Big reward for reaching goal
+                            R[nextState][j] = 500000;
                         }
                         else
                         {
-                            R[i][j] -= 1; // Default penalty for movement
+                            R[i][j] -= 1; 
 
-                            // Manhattan Distance Check: Reward moves that reduce distance
+                            
                             int currentDist = Math.Abs(currentX - goalX) + Math.Abs(currentY - goalY);
                             int nextDist = Math.Abs(nextX - goalX) + Math.Abs(nextY - goalY);
 
                             if (nextDist < currentDist)
                             {
-                                R[i][j] += ((currentDist - nextDist) / 20) * 10; // Reward for moving toward goal
+                                R[i][j] += ((currentDist - nextDist) / 20) * 10; 
                             }
                             else
                             {
@@ -105,7 +105,7 @@ namespace RL
                     }
                     else
                     {
-                        R[i][j] = -50; // High penalty for invalid move
+                        R[i][j] = -50;
                     }
                 }
             }
@@ -145,48 +145,41 @@ namespace RL
         {
             for (int epoch = 0; epoch < maxEpochs; ++epoch)
             {
-                double[][] R = CreateReward(ns, goal, FT, gridWidth); // Create reward table for this goal
+                double[][] R = CreateReward(ns, goal, FT, gridWidth); 
 
-                int currState = state; // Start from a random state
+                int currState = state; 
                 int nextState = currState;
                 int steps = 0;
 
                 while (true)
                 {
                     List<int> possNextStates = GetPossNextStates(currState, FT);
-
-                    // Epsilon-Greedy Action Selection
+                    
                     int action = (rnd.NextDouble() < epsilon) ? rnd.Next(0, 4) : ArgMax(Q[currState]);
-
-                    // Determine next state based on action
+                    
                     if (action == 0 && currState >= gridWidth) nextState = currState - gridWidth;  // Move Up
                     else if (action == 1 && (currState + 1) % gridWidth != 0) nextState = currState + 1; // Move Right
                     else if (action == 2 && currState < ns - gridWidth) nextState = currState + gridWidth; // Move Down
                     else if (action == 3 && currState % gridWidth != 0) nextState = currState - 1; // Move Left
-
-                    // Get max Q-value for the next state
+                    
                     double maxQ = Q[nextState].Max();
-
-                    // Q-Learning Update Rule
+                    
                     if (nextState != -1 && possNextStates.Contains(nextState))
                     {
-                        maxQ = Q[nextState].Max(); // Find best Q-value for next state
+                        maxQ = Q[nextState].Max(); 
 
-                        // Update Q-table correctly
+                        
                         Q[currState][action] = (1 - lrnRate) * Q[currState][action] +
                                                lrnRate * (R[currState][action] + gamma * maxQ);
                     }
                     else
                     {
-                        Q[currState][action] = -1000; // Big penalty for impossible moves
+                        Q[currState][action] = -1000; 
                     }
-
-
 
                     currState = nextState;
                     steps++;
 
-                    // Stop if goal is reached
                     if (currState == goal) break;
                 }
 

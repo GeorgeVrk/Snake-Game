@@ -39,17 +39,8 @@
     <StartupObject />
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Cloo, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\Snake\packages\Cloo.clSharp.1.0.1\lib\netstandard2.0\Cloo.dll</HintPath>
-    </Reference>
-    <Reference Include="ILGPU, Version=1.5.1.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\Snake\packages\ILGPU.1.5.1\lib\net471\ILGPU.dll</HintPath>
-    </Reference>
     <Reference Include="Mono.Options, Version=6.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\Snake\packages\Mono.Options.6.12.0.148\lib\net40\Mono.Options.dll</HintPath>
-    </Reference>
-    <Reference Include="OpenCL.Net, Version=2.2.9.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\Snake\packages\OpenCL.Net.2.2.9.0\lib\net40\OpenCL.Net.dll</HintPath>
     </Reference>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />

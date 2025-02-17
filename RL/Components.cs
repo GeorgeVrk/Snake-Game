@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Security;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -10,6 +8,8 @@ using System.Windows.Media;
 using System.Windows.Shapes;
 using System.Windows.Threading;
 using Serilog;
+
+
 
 namespace RL
 {
@@ -36,7 +36,10 @@ namespace RL
         private static Rectangle food;
         private static Canvas canvas;
         private static State state = new State();
-        private static DispatcherTimer moveTimer;
+        private static DispatcherTimer gameTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(10)
+        };
         private static int currentStep = 0;
         private static bool flag = true;
         public enum Action { UP, DOWN, LEFT, RIGHT }
@@ -49,14 +52,9 @@ namespace RL
             AddSnake(canvas);
             SpawnFood(canvas);
             var window = CreateWindow(canvas);
-            var gameTimer = new DispatcherTimer
+            gameTimer.Tick += async (s, e) =>
             {
-                Interval = TimeSpan.FromMilliseconds(1000)
-            };
-
-            gameTimer.Tick += (s,e) =>
-            {
-                Application.Current.Dispatcher.InvokeAsync(() =>
+                await Application.Current.Dispatcher.InvokeAsync(async () =>
                 {
                     int snakeX = (int)Canvas.GetLeft(snakeBody[0]);
                     int sx = snakeX / 67;
@@ -69,9 +67,11 @@ namespace RL
                     int goalY = (int)Canvas.GetTop(food);
                     int gy = goalY / 37;
                     int foodState = (gy * Rows + gx);
+
                     var actions = state.Train(snakeState, foodState);
                     Console.WriteLine($"Snake at : ( {sx} , {sy} ), Goal at : ( {gx} , {gy} )");
-                    StartMovement(actions);
+
+                    await StartMovementAsync(actions);
                 });
             };
             gameTimer.Start();
@@ -92,6 +92,7 @@ namespace RL
             };
 
             window.KeyDown += Window_KeyDown;
+
             return window;
         }
 
@@ -154,33 +155,26 @@ namespace RL
             CheckBounds();
         }
 
-        private static void StartMovement(List<State.Action> actions)
+        private static async Task StartMovementAsync(List<State.Action> actions)
         {
-           
-            moveTimer = new DispatcherTimer
-            {
-                Interval = TimeSpan.FromMilliseconds(50)
-            };
+            if (actions == null || actions.Count == 0) return;
+            gameTimer.Stop();
 
-            moveTimer.Tick += (s, e) => MoveSnake(actions);
-            moveTimer.Start(); 
-        }
-
-        private static void MoveSnake(List<State.Action> actions)
-        {
-            
-            if (currentStep >= actions.Count)
+            foreach (var action in actions)
             {
-                moveTimer.Stop();
-                return;
+                MoveSnakeSingleStep(action);
+                await Task.Delay(100);
             }
 
+            gameTimer.Start();
+        }
+
+        private static void MoveSnakeSingleStep(State.Action action)
+        {
             var head = snakeBody[0];
             double headX = Canvas.GetLeft(head);
             double headY = Canvas.GetTop(head);
 
-         
-            State.Action action = actions[currentStep];
             switch (action)
             {
                 case State.Action.RIGHT: headX += CellWidth; break;
@@ -195,7 +189,6 @@ namespace RL
             snakeBody.Insert(0, newHead);
             canvas.Children.Add(newHead);
 
-          
             if (snakeBody.Count > 1)
             {
                 var tail = snakeBody[snakeBody.Count - 1];
@@ -203,13 +196,10 @@ namespace RL
                 snakeBody.RemoveAt(snakeBody.Count - 1);
             }
 
-            CheckSelfCollision();
+            //CheckSelfCollision();
             CheckFoodCollision();
             CheckBounds();
-
-            currentStep++;
         }
-
 
         private static void Window_KeyDown(object sender, KeyEventArgs e)
         {
@@ -220,10 +210,9 @@ namespace RL
                 case Key.A: if (snakeDirection != Action.RIGHT) snakeDirection = Action.LEFT; break;
                 case Key.W: if (snakeDirection != Action.DOWN) snakeDirection = Action.UP; break;
             }
+
             MoveSnake(snakeDirection);
         }
-
-
         private static void AddSnake(Canvas canvas)
         {
             Rectangle snakeHead = new Rectangle { Width = CellWidth, Height = CellHeight, Fill = Brushes.Black };
@@ -251,7 +240,6 @@ namespace RL
             MessageBox.Show("Game Over!", "Game Over", MessageBoxButton.OK, MessageBoxImage.Information);
             flag = false;
         }
-
         private static (int x, int y) GetRandomFoodPosition()
         {
             int randomCol = random.Next(0, Cols);
@@ -267,7 +255,6 @@ namespace RL
             Canvas.SetTop(food, foodY);
             canvas.Children.Add(food);
         }
-
         private static void CheckFoodCollision()
         {
             var head = snakeBody[0];

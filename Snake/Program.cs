@@ -34,8 +34,6 @@ namespace Snake
                 {
                     var app = new Application();
                     app.Run(RL.Components.InitializeComponents());
-                    //var State = new State();
-                    //State.Train();
                 }
                 else
                 {
